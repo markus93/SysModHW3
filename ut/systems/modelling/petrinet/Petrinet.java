@@ -13,7 +13,7 @@ public class Petrinet {
 
     //Creates new place and adds it to transition target list
     Place addNewPlace(Transition trans){
-        String label = "P" + places.size(); //TODO better to use counter? Is label necessary?
+        String label = "P" + places.size(); //Adds names based how many items in list (no deletion allowed)
         Place place = new Place(label);
         trans.addTarget(place); //Add new place to transition
         places.add(place);
@@ -32,8 +32,9 @@ public class Petrinet {
 
         //If given source place is null, create new place
         if(src == null){
-            String pLabel = "P" + places.size(); //TODO Is label necessary?
+            String pLabel = "P" + places.size();
             src = new Place(pLabel);
+            places.add(src);
         }
 
         Transition trans = addNewTransition(src, label);
@@ -45,8 +46,9 @@ public class Petrinet {
 
         //If given source place is null, create new place
         if(src == null){
-            String pLabel = "P" + places.size(); //TODO Is label necessary?
+            String pLabel = "P" + places.size();
             src = new Place(pLabel);
+            places.add(src);
         }
 
         List<Place> targetPlaces = new ArrayList<Place>(targetCount);
@@ -64,8 +66,9 @@ public class Petrinet {
 
         //If given source place is null, create new place
         if(src == null){
-            String pLabel = "P" + places.size(); //TODO Is label necessary?
+            String pLabel = "P" + places.size();
             src = new Place(pLabel);
+            places.add(src);
         }
 
         List<Place> targetPlaces = new ArrayList<Place>(targetCount);
@@ -114,7 +117,7 @@ public class Petrinet {
     }
 
     // Joins 2 petrinets together by adding all transitions of subpetrinet start to element(srcPlace) given by argument
-    public Place joinPetrinets(Place srcPlace, Petrinet petrinetSub){ //TODO atm multiple places may have same name.
+    public Place joinPetrinets(Place srcPlace, Petrinet petrinetSub){
 
         List<Place> placesSub = petrinetSub.getPlaces();
 
@@ -123,7 +126,16 @@ public class Petrinet {
         List<Transition> transOfStartPlace = startPlaceSub.getTargetTransitions(); //Get all the transitions from start place
 
         //Start place is left out, because it is connection point of 2 petrinets
-        places.addAll(placesSub.subList(1, placesSub.size()-1));
+        placesSub = placesSub.subList(1, placesSub.size());
+
+        //Set new labels for places, so any names wouldn't repeat
+        int placeCount = places.size();
+        for (int i = 0; i < placesSub.size(); i++) {
+            String newLabel = "P" + (placeCount + i);
+            placesSub.get(i).setLabel(newLabel);
+        }
+
+        places.addAll(placesSub);
 
         //Add transitions from start place of the sub petrinet to srcPlace
         for (int i = 0; i < transOfStartPlace.size(); i++) {

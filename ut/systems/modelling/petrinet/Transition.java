@@ -8,6 +8,11 @@ public class Transition {
     private String label;
     private List<Place> targetPlaces = new ArrayList<Place>();;
 
+    @Override
+    public String toString() {
+        return label;
+    }
+
     public Transition(String label){
         this.label = label;
     }

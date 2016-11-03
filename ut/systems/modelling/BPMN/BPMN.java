@@ -28,4 +28,8 @@ public class BPMN {
 
         return null;
     }
+
+    public void addSequenceFlows(SequenceFlow flow) {
+        sequenceFlows.add(flow);
+    }
 }

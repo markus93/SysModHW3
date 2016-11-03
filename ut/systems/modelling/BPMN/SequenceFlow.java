@@ -12,6 +12,11 @@ public class SequenceFlow {
     public SequenceFlow() {
     }
 
+    public SequenceFlow(Node sourceNode, Node targetNode) {
+        this.sourceNode = sourceNode;
+        this.targetNode = targetNode;
+    }
+
 
     public Node getTargetNode() {
         return targetNode;

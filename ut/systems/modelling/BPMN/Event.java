@@ -3,9 +3,13 @@ package ut.systems.modelling.BPMN;
 
 public class Event extends Node {
 
-    private String type; //TODO refactor to enum?
+    public enum Type{
+        START, END
+    }
 
-    public Event(String type){
+    private Type type;
+
+    public Event(Type type){
         this.type = type;
     }
 }

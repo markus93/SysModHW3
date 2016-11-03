@@ -10,7 +10,7 @@ import java.util.List;
 
 public class Converter {
 
-    static Petrinet convert(BPMN bpmn){
+    public static Petrinet convert(BPMN bpmn){
 
         Petrinet petrinet = new Petrinet();
 
@@ -21,12 +21,11 @@ public class Converter {
         return petrinet;
     }
 
-    public static void genPetrinet(BPMN bpmn, Petrinet petrinet, SequenceFlow flow){
+    private static void genPetrinet(BPMN bpmn, Petrinet petrinet, SequenceFlow flow){
         genPetrinet(bpmn, petrinet, flow, null);
     }
 
-    //TODO is petrinet actually filled?
-    static Pair<Place, SequenceFlow> genPetrinet(BPMN bpmn, Petrinet petrinet, SequenceFlow flow, Place src){
+    private static Pair<Place, SequenceFlow> genPetrinet(BPMN bpmn, Petrinet petrinet, SequenceFlow flow, Place src){
 
         while (true){
             Node node = flow.getTargetNode(); //Only one outgoing flow from start event
@@ -35,21 +34,24 @@ public class Converter {
             //In this case reached end and petrinet is generated
             if(node instanceof Event){
 
-                return null; //No need to return actual Flow and Place pair.
+                return new Pair<>(src, flow); //No need to return actual Flow and Place pair.
             }
             else if(node instanceof Task){
 
                 if(node instanceof  Simple){
 
                     src = petrinet.insertTask(src, ((Simple) node).getName());
+                    flow = outGoingFlows.get(0);
                 }
-                else{ //Compound task
+                else{ //Compound task //TODO not working, two places in row????
 
                     BPMN bpmnSub = ((Compound) node).getCompoundBPMN();
 
                     Petrinet petrinetSub = convert(bpmnSub);
 
                     src = petrinet.joinPetrinets(src, petrinetSub);
+                    flow = outGoingFlows.get(0);
+
                 }
             }
             else if(node instanceof Gateway){
@@ -70,7 +72,7 @@ public class Converter {
                         srcsNew.add(src);
                     }
 
-                    petrinet.insertXORJoin(srcsNew);
+                    src = petrinet.insertXORJoin(srcsNew);
 
                 }
                 else if(type == Gateway.Type.ANDSPLIT){
@@ -87,12 +89,12 @@ public class Converter {
                         srcsNew.add(src);
                     }
 
-                    petrinet.insertANDJoin(srcsNew);
+                    src = petrinet.insertANDJoin(srcsNew);
 
                 }
                 else{ //In this case XORJOIN or ANDJOIN
 
-                    flow = outGoingFlows.get(0); //TODO Why first outgoing flow?
+                    flow = outGoingFlows.get(0); //Only one outgoing flow from XORJOIN or ANDJOIN
 
                     return new Pair<>(src, flow);
 

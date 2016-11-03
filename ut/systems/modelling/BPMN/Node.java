@@ -18,4 +18,9 @@ public class Node {
     public void setOutGoingFlows(List<SequenceFlow> outGoingFlows) {
         this.outGoingFlows = outGoingFlows;
     }
+
+    public void addOutGoingFlow(SequenceFlow flow) {
+        outGoingFlows.add(flow);
+    }
+
 }
