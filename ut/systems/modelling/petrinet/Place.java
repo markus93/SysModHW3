@@ -15,12 +15,13 @@ public class Place {
         this.label = label;
     }
 
-    public List<Transition> getTargetTransitions(){
-        return targetTransition;
-    }
-
+    //Add target to place
     void addTarget (Transition trans){
         targetTransition.add(trans);
+    }
+
+    public List<Transition> getTargetTransitions(){
+        return targetTransition;
     }
 
     public String getLabel(){

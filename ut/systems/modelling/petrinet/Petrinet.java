@@ -11,42 +11,128 @@ public class Petrinet {
     public Petrinet(){
     }
 
-    //Creates new place and adds target transition
-    void addNewPlace(Transition trans){
-        String label = "P" + places.size(); //TODO better to use counter?
+    //Creates new place and adds it to transition target list
+    Place addNewPlace(Transition trans){
+        String label = "P" + places.size(); //TODO better to use counter? Is label necessary?
         Place place = new Place(label);
-        place.addTarget(trans);
+        trans.addTarget(place); //Add new place to transition
         places.add(place);
+        return place;
     }
 
-    //Creates new transition and adds target place
-    void addNewTransition(Place place, String label){
+    //Creates new transition and adds it to place target list
+    Transition addNewTransition(Place place, String label){
         Transition trans = new Transition(label);
-        trans.addTarget(place);
+        place.addTarget(trans);
         transitions.add(trans);
+        return trans;
     }
 
-    void insertTask(Place src, String label){
+    Place insertTask(Place src, String label){
+
+        //If given source place is null, create new place
+        if(src == null){
+            String pLabel = "P" + places.size(); //TODO Is label necessary?
+            src = new Place(pLabel);
+        }
+
+        Transition trans = addNewTransition(src, label);
+        Place target = addNewPlace(trans);
+        return target;
+    }
+
+    List<Place> insertXORSplit(Place src, Integer targetCount){
+
+        //If given source place is null, create new place
+        if(src == null){
+            String pLabel = "P" + places.size(); //TODO Is label necessary?
+            src = new Place(pLabel);
+        }
+
+        List<Place> targetPlaces = new ArrayList<Place>(targetCount);
+
+        for (int i = 0; i < targetCount; i++) {
+
+            Place target = insertTask(src, ""); //Invisible transition
+            targetPlaces.add(i,target);
+        }
+
+        return targetPlaces;
+    }
+
+    List<Place> insertANDSplit(Place src, Integer targetCount){
+
+        //If given source place is null, create new place
+        if(src == null){
+            String pLabel = "P" + places.size(); //TODO Is label necessary?
+            src = new Place(pLabel);
+        }
+
+        List<Place> targetPlaces = new ArrayList<Place>(targetCount);
+
+        Transition trans = addNewTransition(src, "");  //Invisible transition
+
+        for (int i = 0; i < targetCount; i++) {
+
+            Place target = addNewPlace(trans);
+            targetPlaces.add(i,target);
+        }
+
+        return targetPlaces;
+    }
+
+    Place insertXORJoin(List<Place> sourcePlaces){
+
+        Transition trans = addNewTransition(sourcePlaces.get(0), ""); //add new invisible transition
+
+        Place targetPlace = addNewPlace(trans); //All new transitions share this targetPlace
+
+        //For each element in srcs create new invisible transition and target these to targetPlace
+        for (int i = 1; i < sourcePlaces.size(); i++) { //first src already done
+            trans = addNewTransition(sourcePlaces.get(i), "");
+            trans.addTarget(targetPlace);
+        }
+
+        return targetPlace;
 
     }
 
-    void insertXORSplit(Place src, Integer targetCount){
+    Place insertANDJoin(List<Place> sourcePlaces){
 
+        Transition trans = addNewTransition(sourcePlaces.get(0), ""); //add new invisible transition
+
+        //For each element in srcs, set these target to trans
+        for (int i = 1; i < sourcePlaces.size(); i++) { //first src already done
+            Place place = sourcePlaces.get(i);
+            place.addTarget(trans);
+        }
+
+        //Adds new place to invisible transition
+        Place targetPlace = addNewPlace(trans);
+
+        return targetPlace;
     }
 
-    void insertANDSplit(Place src, Integer targetCount){
+    // Joins 2 petrinets together by adding all transitions of subpetrinet start to element(srcPlace) given by argument
+    Place joinPetrinets(Place srcPlace, Petrinet petrinetSub){
 
-    }
+        List<Place> placesSub = petrinetSub.getPlaces();
 
-    void insertXORJoin(List<Place> srcs){
+        Place startPlaceSub = placesSub.get(0); //Start place of sub petrinet
 
-    }
+        List<Transition> transOfStartPlace = startPlaceSub.getTargetTransitions(); //Get all the transitions from start place
 
-    void insertANDJoin(List<Place> srcs){
+        //Start place is left out, because it is connection point of 2 petrinets
+        places.addAll(placesSub.subList(1, placesSub.size()-1));
 
-    }
+        //Add transitions from start place of the sub petrinet to srcPlace
+        for (int i = 0; i < transOfStartPlace.size(); i++) {
+            Transition trans = transOfStartPlace.get(i);
+            srcPlace.addTarget(trans);
+        }
 
-    void joinPetrinets(Place srcPlace, Petrinet petrinetSub){
+        //Return last place as new target (In our case only one end point and places added in order)
+        return places.get(places.size()-1);
 
     }
 

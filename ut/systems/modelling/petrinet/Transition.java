@@ -12,6 +12,7 @@ public class Transition {
         this.label = label;
     }
 
+    //Add target to transition
     void addTarget (Place place){
         targetPlaces.add(place);
     }
