@@ -12,7 +12,20 @@ public class BPMN {
 
     }
 
-    SequenceFlow findFirstFlow(){
+    public SequenceFlow findFirstFlow(){
+
+        List<SequenceFlow> flows = sequenceFlows;
+
+        int i = 0;
+
+        while (i < flows.size()){
+            Node srcNode = flows.get(i).getSourceNode();
+
+            if (srcNode instanceof Event){
+                return flows.get(i);
+            }
+        }
+
         return null;
     }
 }

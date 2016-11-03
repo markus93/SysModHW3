@@ -9,4 +9,8 @@ public class Compound extends Task {
         super(name); //TODO should this task have name
         this.compoundBPMN = compoundBPMN;
     }
+
+    public BPMN getCompoundBPMN() {
+        return compoundBPMN;
+    }
 }

@@ -6,26 +6,26 @@ import java.util.List;
 
 public class SequenceFlow {
 
-    List<Node> sourceNodes = new ArrayList<Node>();
-    List<Node> targetNodes = new ArrayList<Node>();
+    Node sourceNode = null;
+    Node targetNode = null;
 
     public SequenceFlow() {
     }
 
 
-    public List<Node> getTargetNodes() {
-        return targetNodes;
+    public Node getTargetNode() {
+        return targetNode;
     }
 
-    public void setTargetNodes(List<Node> targetNodes) {
-        this.targetNodes = targetNodes;
+    public void setTargetNode(Node targetNode) {
+        this.targetNode = targetNode;
     }
 
-    public List<Node> getSourceNodes() {
-        return sourceNodes;
+    public Node getSourceNode() {
+        return sourceNode;
     }
 
-    public void setSourceNodes(List<Node> sourceNodes) {
-        this.sourceNodes = sourceNodes;
+    public void setSourceNode(Node sourceNode) {
+        this.sourceNode = sourceNode;
     }
 }

@@ -5,8 +5,8 @@ import java.util.List;
 
 public class Petrinet {
 
-    private List<Place> places = new ArrayList<Place>();
-    private List<Transition> transitions  = new ArrayList<Transition>();;
+    private List<Place> places = new ArrayList<>();
+    private List<Transition> transitions  = new ArrayList<>();;
 
     public Petrinet(){
     }
@@ -28,7 +28,7 @@ public class Petrinet {
         return trans;
     }
 
-    Place insertTask(Place src, String label){
+    public Place insertTask(Place src, String label){
 
         //If given source place is null, create new place
         if(src == null){
@@ -41,7 +41,7 @@ public class Petrinet {
         return target;
     }
 
-    List<Place> insertXORSplit(Place src, Integer targetCount){
+    public List<Place> insertXORSplit(Place src, Integer targetCount){
 
         //If given source place is null, create new place
         if(src == null){
@@ -60,7 +60,7 @@ public class Petrinet {
         return targetPlaces;
     }
 
-    List<Place> insertANDSplit(Place src, Integer targetCount){
+    public List<Place> insertANDSplit(Place src, Integer targetCount){
 
         //If given source place is null, create new place
         if(src == null){
@@ -81,7 +81,7 @@ public class Petrinet {
         return targetPlaces;
     }
 
-    Place insertXORJoin(List<Place> sourcePlaces){
+    public Place insertXORJoin(List<Place> sourcePlaces){
 
         Transition trans = addNewTransition(sourcePlaces.get(0), ""); //add new invisible transition
 
@@ -97,7 +97,7 @@ public class Petrinet {
 
     }
 
-    Place insertANDJoin(List<Place> sourcePlaces){
+    public Place insertANDJoin(List<Place> sourcePlaces){
 
         Transition trans = addNewTransition(sourcePlaces.get(0), ""); //add new invisible transition
 
@@ -114,7 +114,7 @@ public class Petrinet {
     }
 
     // Joins 2 petrinets together by adding all transitions of subpetrinet start to element(srcPlace) given by argument
-    Place joinPetrinets(Place srcPlace, Petrinet petrinetSub){
+    public Place joinPetrinets(Place srcPlace, Petrinet petrinetSub){ //TODO atm multiple places may have same name.
 
         List<Place> placesSub = petrinetSub.getPlaces();
 
