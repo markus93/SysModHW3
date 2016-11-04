@@ -16,14 +16,11 @@ public class Converter {
 
         SequenceFlow flow = bpmn.findFirstFlow();
 
-        genPetrinet(bpmn, petrinet, flow);
+        Place src = petrinet.addPlace();
+
+        genPetrinet(bpmn, petrinet, flow, src);
 
         return petrinet;
-    }
-
-    private static void genPetrinet(BPMN bpmn, Petrinet petrinet, SequenceFlow flow){
-        Place src = petrinet.addPlace();
-        genPetrinet(bpmn, petrinet, flow, src);
     }
 
     private static Pair<Place, SequenceFlow> genPetrinet(BPMN bpmn, Petrinet petrinet, SequenceFlow flow, Place src){
@@ -53,7 +50,6 @@ public class Converter {
 
                     src = petrinet.joinPetrinets(src, petrinetSub);
                     flow = outGoingFlows.get(0);
-
                 }
             }
             else if(node instanceof Gateway){
