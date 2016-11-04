@@ -11,6 +11,13 @@ public class Petrinet {
     public Petrinet(){
     }
 
+    public Place addPlace(){
+        String pLabel = "P" + places.size();
+        Place place = new Place(pLabel);
+        places.add(place);
+        return place;
+    }
+
     //Creates new place and adds it to transition target list
     Place addNewPlace(Transition trans){
         String label = "P" + places.size(); //Adds names based how many items in list (no deletion allowed)
@@ -30,26 +37,12 @@ public class Petrinet {
 
     public Place insertTask(Place src, String label){
 
-        //If given source place is null, create new place
-        if(src == null){
-            String pLabel = "P" + places.size();
-            src = new Place(pLabel);
-            places.add(src);
-        }
-
         Transition trans = addNewTransition(src, label);
         Place target = addNewPlace(trans);
         return target;
     }
 
     public List<Place> insertXORSplit(Place src, Integer targetCount){
-
-        //If given source place is null, create new place
-        if(src == null){
-            String pLabel = "P" + places.size();
-            src = new Place(pLabel);
-            places.add(src);
-        }
 
         List<Place> targetPlaces = new ArrayList<Place>(targetCount);
 
@@ -63,13 +56,6 @@ public class Petrinet {
     }
 
     public List<Place> insertANDSplit(Place src, Integer targetCount){
-
-        //If given source place is null, create new place
-        if(src == null){
-            String pLabel = "P" + places.size();
-            src = new Place(pLabel);
-            places.add(src);
-        }
 
         List<Place> targetPlaces = new ArrayList<Place>(targetCount);
 

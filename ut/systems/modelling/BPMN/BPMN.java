@@ -24,6 +24,8 @@ public class BPMN {
             if (srcNode instanceof Event){
                 return flows.get(i);
             }
+
+            i++;
         }
 
         return null;

@@ -22,12 +22,14 @@ public class Converter {
     }
 
     private static void genPetrinet(BPMN bpmn, Petrinet petrinet, SequenceFlow flow){
-        genPetrinet(bpmn, petrinet, flow, null);
+        Place src = petrinet.addPlace();
+        genPetrinet(bpmn, petrinet, flow, src);
     }
 
     private static Pair<Place, SequenceFlow> genPetrinet(BPMN bpmn, Petrinet petrinet, SequenceFlow flow, Place src){
 
         while (true){
+
             Node node = flow.getTargetNode(); //Only one outgoing flow from start event
             List<SequenceFlow> outGoingFlows = node.getOutGoingFlows();
 
@@ -43,7 +45,7 @@ public class Converter {
                     src = petrinet.insertTask(src, ((Simple) node).getName());
                     flow = outGoingFlows.get(0);
                 }
-                else{ //Compound task //TODO not working, two places in row????
+                else{ //Compound task - src Place can be null.
 
                     BPMN bpmnSub = ((Compound) node).getCompoundBPMN();
 
