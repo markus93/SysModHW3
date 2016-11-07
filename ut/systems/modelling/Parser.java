@@ -2,6 +2,8 @@ package ut.systems.modelling;
 
 import org.processmining.models.graphbased.directed.bpmn.BPMNNode;
 import org.processmining.models.graphbased.directed.bpmn.elements.*;
+import org.processmining.models.graphbased.directed.bpmn.elements.Event;
+import org.processmining.models.graphbased.directed.bpmn.elements.Gateway;
 import org.processmining.models.graphbased.directed.petrinet.Petrinet;
 import org.processmining.models.graphbased.directed.petrinet.PetrinetNode;
 import org.processmining.models.graphbased.directed.petrinet.elements.Place;
@@ -9,9 +11,7 @@ import org.processmining.models.graphbased.directed.petrinet.elements.Transition
 import org.processmining.models.graphbased.directed.petrinet.impl.PetrinetImpl;
 import org.processmining.models.graphbased.directed.bpmn.BPMNDiagram;
 
-import ut.systems.modelling.BPMN.BPMN;
-import ut.systems.modelling.BPMN.Node;
-import ut.systems.modelling.BPMN.SequenceFlow;
+import ut.systems.modelling.BPMN.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,14 +34,16 @@ public class Parser {
         BPMN ourBPMN = new BPMN();
         ourBPMN.addNode(ourStart);
 
-        BPMNconverter(promNode, ourStart, promBPMN, ourBPMN, null);
+        List<ut.systems.modelling.BPMN.Gateway> joinGateways = new ArrayList<>();
+
+        BPMNconverter(promNode, ourStart, promBPMN, ourBPMN, joinGateways);
 
         return ourBPMN;
     }
 
-    static ut.systems.modelling.BPMN.Gateway BPMNconverter(BPMNNode promIn, ut.systems.modelling.BPMN.Node ourIn,
+    static List<ut.systems.modelling.BPMN.Gateway> BPMNconverter(BPMNNode promIn, ut.systems.modelling.BPMN.Node ourIn,
                                                            BPMNDiagram promBPMN, BPMN ourBPMN,
-                                                           ut.systems.modelling.BPMN.Gateway joinGateway) {
+                                                           List<ut.systems.modelling.BPMN.Gateway> joinGateways) {
 
         ut.systems.modelling.BPMN.Node ourOut;
         ut.systems.modelling.BPMN.SequenceFlow ourFlow;
@@ -58,7 +60,8 @@ public class Parser {
                     ourIn.addOutGoingFlow(ourFlow);
                     ourBPMN.addSequenceFlows(ourFlow);
 
-                    return null;
+                    // Kõige lõpus tagastame kõik join gatewayd
+                    return joinGateways;
 
                 } else if (promOut instanceof Activity) {
 
@@ -75,24 +78,30 @@ public class Parser {
                     ourIn.addOutGoingFlow(ourFlow);
                     ourBPMN.addSequenceFlows(ourFlow);
 
-                    if (promIn instanceof Gateway && !isBPMNJoining((Gateway) promIn, promBPMN)) {
+                    if (promIn instanceof Gateway && !isBPMNGatewayJoining((Gateway) promIn, promBPMN)) {
 
-                        //follow the flows
-                        if (joinGateway == null) {
-                            joinGateway = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, null);
+                        // Oleme teisel pool split gatewayd,
+                        if (joinGateways.size() == 0) {
+                            // Alguses on tühi ja siis lähme kaugemale joine otsima
+                            joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, null);
                         } else {
-                            BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateway);
+                            // kõik joinid on olemas juba
+                            BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
+                            // funktsiooni lõpus eemaldame esimese elemendi ja siis tagastame
                         }
 
                     } else {
 
                         //follow the flows
-                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateway);
+                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
                     }
 
                 } else if (promOut instanceof Gateway) {
 
-                    if (isBPMNJoining((Gateway) promOut, promBPMN)) {
+
+                    if (isBPMNGatewayJoining((Gateway) promOut, promBPMN)) {
+                        // join gateway ees oleme
+
                         if(((Gateway) promOut).getGatewayType() == Gateway.GatewayType.PARALLEL){
                             ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.ANDSPLIT);
                         } else {
@@ -104,43 +113,39 @@ public class Parser {
                         ourIn.addOutGoingFlow(ourFlow);
                         ourBPMN.addSequenceFlows(ourFlow);
 
-                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, null);
+                        joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
+                        joinGateways.add(0, (ut.systems.modelling.BPMN.Gateway) ourOut);
+
+                        return joinGateways;
 
 
                     } else {
-                        // only the first join will add gateway to nodes, others use the same one.
-                        if(joinGateway == null) {
-                            if(((Gateway) promOut).getGatewayType() == Gateway.GatewayType.PARALLEL){
-                                ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.ANDJOIN);
-                            } else {
-                                ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.XORJOIN);
-                            }
 
-                            ourBPMN.addNode(ourOut);
-                            ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
-                            ourIn.addOutGoingFlow(ourFlow);
-                            ourBPMN.addSequenceFlows(ourFlow);
 
-                            BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, null);
+                        // Oleme split gateway ees
 
-                            return (ut.systems.modelling.BPMN.Gateway) ourOut;
-
+                        if(((Gateway) promOut).getGatewayType() == Gateway.GatewayType.PARALLEL){
+                            ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.ANDJOIN);
                         } else {
-                            ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, joinGateway);
-                            ourIn.addOutGoingFlow(ourFlow);
-                            ourBPMN.addSequenceFlows(ourFlow);
-
-                            return null;
+                            ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.XORJOIN);
                         }
+
+                        ourBPMN.addNode(ourOut);
+                        ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
+                        ourIn.addOutGoingFlow(ourFlow);
+                        ourBPMN.addSequenceFlows(ourFlow);
+
+                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
+
                     }
                 }
             }
         }
-
-        return null;
+        joinGateways.remove(0);
+        return joinGateways;
     }
 
-    static Boolean isBPMNJoining(Gateway gateway, BPMNDiagram bpmn) {
+    static Boolean isBPMNGatewayJoining(Gateway gateway, BPMNDiagram bpmn) {
 
         int outCount = 0;
         for(Flow flow : bpmn.getFlows()) {
@@ -170,13 +175,15 @@ public class Parser {
 
         Place promStartPlace = promPN.addPlace(ourStartPlace.getLabel());
 
-        PNConverter(ourStartPlace, promStartPlace, promPN, ourPN, null);
+        List<PetrinetNode> joinNodes = new ArrayList<>();
+
+        PNConverter(ourStartPlace, promStartPlace, promPN, ourPN, joinNodes);
 
         return promPN;
     }
 
-    static PetrinetNode PNConverter(ut.systems.modelling.petrinet.Place ourIn, Place promIn, Petrinet promPN,
-                                    ut.systems.modelling.petrinet.Petrinet ourPN, PetrinetNode joinNode){
+    static List<PetrinetNode> PNConverter(ut.systems.modelling.petrinet.Place ourIn, Place promIn, Petrinet promPN,
+                                    ut.systems.modelling.petrinet.Petrinet ourPN, List<PetrinetNode> joinNodes){
 
         Transition promOut;
         for(ut.systems.modelling.petrinet.Transition ourOut: ourIn.getTargetTransitions()) {
@@ -189,39 +196,40 @@ public class Parser {
                     promOut = promPN.addTransition("");
                     promPN.addArc(promIn, promOut);
 
-                    return PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
+                    return PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
 
                 } else if(pnNodeOutCount(ourIn) > 1) {
                     // XOR SPLIT
 
-                    if (joinNode == null) {
+                    if (joinNodes.size() == 0) {
                         promOut = promPN.addTransition("");
                         promPN.addArc(promIn, promOut);
 
-                        joinNode = PNConverter(ourOut, promOut, promPN, ourPN, null);
+                        joinNodes = PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
 
                     } else {
 
                         promOut = promPN.addTransition("");
                         promPN.addArc(promIn, promOut);
-                        PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
+                        PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
 
                     }
 
                 } else if(pnNodeInCount(ourOut, ourPN) > 1) {
                     // AND JOIN
 
-                    if (joinNode == null) {
+                    if (joinNodes.size() == 0) {
 
                         promOut = promPN.addTransition("");
                         promPN.addArc(promIn, promOut);
-                        PNConverter(ourOut, promOut, promPN, ourPN, null);
+                        joinNodes = PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
+                        joinNodes.add(0, promOut);
 
-                        return promOut;
+                        return joinNodes;
 
                     } else {
 
-                        promPN.addArc(promIn, (Transition) joinNode);
+                        promPN.addArc(promIn, (Transition) joinNodes.get(0));
                         return null;
 
                     }
@@ -232,7 +240,7 @@ public class Parser {
                     promOut = promPN.addTransition("");
                     promPN.addArc(promIn, promOut);
 
-                    return PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
+                    return PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
                 }
 
             } else {
@@ -242,16 +250,17 @@ public class Parser {
                 promOut = promPN.addTransition(ourOut.getLabel());
                 promPN.addArc(promIn, promOut);
 
-                return PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
+                return PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
             }
 
         }
 
-        return null;
+        joinNodes.remove(0);
+        return joinNodes;
     }
 
-    static PetrinetNode PNConverter(ut.systems.modelling.petrinet.Transition ourIn, Transition promIn, Petrinet promPN,
-                                    ut.systems.modelling.petrinet.Petrinet ourPN, PetrinetNode joinNode) {
+    static List<PetrinetNode> PNConverter(ut.systems.modelling.petrinet.Transition ourIn, Transition promIn, Petrinet promPN,
+                                    ut.systems.modelling.petrinet.Petrinet ourPN, List<PetrinetNode> joinNodes) {
 
         Place promOut;
         for (ut.systems.modelling.petrinet.Place ourOut : ourIn.getTargetPlaces()) {
@@ -261,14 +270,14 @@ public class Parser {
                 if(pnNodeOutCount(ourIn) > 1) {
                     // AND SPLIT
 
-                    if (joinNode == null) {
+                    if (joinNodes.size() == 0) {
                         promOut = promPN.addPlace(ourOut.getLabel());
                         promPN.addArc(promIn, promOut);
-                        joinNode = PNConverter(ourOut, promOut, promPN, ourPN, null);
+                        joinNodes = PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
                     } else {
                         promOut = promPN.addPlace(ourOut.getLabel());
                         promPN.addArc(promIn, promOut);
-                        PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
+                        PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
                     }
 
                 } else if(pnNodeInCount(ourIn, ourPN) > 1) {
@@ -276,28 +285,30 @@ public class Parser {
                     // AND JOIN (REGULAR)
                     promOut = promPN.addPlace(ourOut.getLabel());
                     promPN.addArc(promIn, promOut);
-                    return PNConverter(ourOut, promOut, promPN, ourPN, null);
+                    return PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
 
                 } else if (pnNodeInCount(ourOut, ourPN) > 1) {
                     // XOR JOIN
 
-                    if (joinNode == null) {
+                    if (joinNodes.size() == 0) {
                         promOut = promPN.addPlace(ourOut.getLabel());
                         promPN.addArc(promIn, promOut);
-                        PNConverter(ourOut, promOut, promPN, ourPN, null);
-                        return promOut;
+                        joinNodes = PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
+                        joinNodes.add(0, promOut);
+
+                        return joinNodes;
 
                     } else {
-                        promPN.addArc(promIn, (Place) joinNode);
-                        return null;
+                        promPN.addArc(promIn, (Place) joinNodes.remove(0));
+                        return joinNodes;
                     }
 
                 } else {
-                    // XOR SPLIT
+                    // XOR SPLIT (REGULAR)
 
                     promOut = promPN.addPlace(ourOut.getLabel());
                     promPN.addArc(promIn, promOut);
-                    return PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
+                    return PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
                 }
 
             } else {
@@ -305,12 +316,13 @@ public class Parser {
                 // Regular case, no splits or joins
                 promOut = promPN.addPlace(ourOut.getLabel());
                 promPN.addArc(promIn, promOut);
-                return PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
+                return PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
 
             }
 
         }
-        return null;
+        joinNodes.remove(0);
+        return joinNodes;
     }
 
     static int pnNodeOutCount(ut.systems.modelling.petrinet.Transition node) {
