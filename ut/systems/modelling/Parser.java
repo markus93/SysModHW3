@@ -46,7 +46,6 @@ public class Parser {
                                                            BPMNDiagram promBPMN, BPMN ourBPMN,
                                                            List<ut.systems.modelling.BPMN.Gateway> joinGateways) {
 
-        System.out.println("Rekursiivne väljakutse");
 
         ut.systems.modelling.BPMN.Node ourOut;
         ut.systems.modelling.BPMN.SequenceFlow ourFlow;
@@ -54,7 +53,6 @@ public class Parser {
             if (promIn.equals(promFlow.getSource())) {
 
                 BPMNNode promOut = promFlow.getTarget();
-                System.out.println("Loopis leitsime promOuti");
 
                 if (promOut instanceof Event) {
                     // End of the recursion
@@ -64,14 +62,10 @@ public class Parser {
                     ourIn.addOutGoingFlow(ourFlow);
                     ourBPMN.addSequenceFlows(ourFlow);
 
-                    System.out.println("Tegemist oli evendiga");
-
                     // Kõige lõpus tagastame kõik join gatewayd
                     return joinGateways;
 
                 } else if (promOut instanceof Activity) {
-
-                    System.out.println("Tegemist oli activitiga");
 
                     if (promOut instanceof SubProcess) {
                         // Compound task
@@ -87,16 +81,12 @@ public class Parser {
 
                     if (promIn instanceof Gateway && !isBPMNGatewayJoining((Gateway) promIn, promBPMN)) {
 
-                        System.out.println("Kohe pärast split gatewayd");
-
                         // Oleme teisel pool split gatewayd,
                         if (joinGateways.size() == 0) {
                             // Alguses on tühi ja siis lähme kaugemale joine otsima
-                            System.out.println("Liigume edasi");
                             joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
                         } else {
                             // kõik joinid on olemas juba
-                            System.out.println("Kõrvalharu");
                             BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
                             // funktsiooni lõpus eemaldame esimese elemendi ja siis tagastame
                         }
@@ -104,7 +94,6 @@ public class Parser {
                     } else {
 
                         //follow the flows
-                        System.out.println("Igav");
                         return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
                     }
 
@@ -113,7 +102,6 @@ public class Parser {
                     if (isBPMNGatewayJoining((Gateway) promOut, promBPMN)) {
                         // join gateway ees oleme
 
-                        System.out.println("Join gateway ees oleme");
 
                         if (joinGateways.size() == 0) {
 
@@ -139,14 +127,12 @@ public class Parser {
                             ourIn.addOutGoingFlow(ourFlow);
                             ourBPMN.addSequenceFlows(ourFlow);
 
-                            System.out.println("Kõrvalharu lõpp");
                             return joinGateways;
                         }
 
 
                     } else {
 
-                        System.out.println("Spliti ees oleme");
                         // Oleme split gateway ees
 
                         if(((Gateway) promOut).getGatewayType() == Gateway.GatewayType.PARALLEL){
@@ -164,12 +150,10 @@ public class Parser {
 
                     }
                 } else {
-                    System.out.println("SEDA EI TOHIKS JUHTUDA!!");
                 }
             }
         }
 
-        System.out.println("Täitsa lõpp");
         joinGateways.remove(0);
         return joinGateways;
     }
@@ -223,6 +207,7 @@ public class Parser {
                     // AND SPLIT (REGULAR)
 
                     promOut = promPN.addTransition("");
+                    promOut.setInvisible(Boolean.TRUE);
                     promPN.addArc(promIn, promOut);
 
                     return PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
@@ -232,6 +217,7 @@ public class Parser {
 
                     if (joinNodes.size() == 0) {
                         promOut = promPN.addTransition("");
+                        promOut.setInvisible(Boolean.TRUE);
                         promPN.addArc(promIn, promOut);
 
                         joinNodes = PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
@@ -239,6 +225,7 @@ public class Parser {
                     } else {
 
                         promOut = promPN.addTransition("");
+                        promOut.setInvisible(Boolean.TRUE);
                         promPN.addArc(promIn, promOut);
                         PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
 
@@ -250,6 +237,7 @@ public class Parser {
                     if (joinNodes.size() == 0) {
 
                         promOut = promPN.addTransition("");
+                        promOut.setInvisible(Boolean.TRUE);
                         promPN.addArc(promIn, promOut);
                         joinNodes = PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
                         joinNodes.add(0, promOut);
@@ -267,6 +255,7 @@ public class Parser {
                     // XOR JOIN (REGULAR)
 
                     promOut = promPN.addTransition("");
+                    promOut.setInvisible(Boolean.TRUE);
                     promPN.addArc(promIn, promOut);
 
                     return PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
@@ -283,8 +272,12 @@ public class Parser {
             }
 
         }
+        try{
+            joinNodes.remove(0);
+        } catch (Throwable e){
+            //do exception handling
+        }
 
-        joinNodes.remove(0);
         return joinNodes;
     }
 
@@ -328,7 +321,7 @@ public class Parser {
                         return joinNodes;
 
                     } else {
-                        promPN.addArc(promIn, (Place) joinNodes.remove(0));
+                        promPN.addArc(promIn, (Place) joinNodes.get(0));
                         return joinNodes;
                     }
 
@@ -350,7 +343,11 @@ public class Parser {
             }
 
         }
-        joinNodes.remove(0);
+        try{
+            joinNodes.remove(0);
+        } catch (Throwable e){
+            //do exception handling
+        }
         return joinNodes;
     }
 
