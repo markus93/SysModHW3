@@ -1,7 +1,7 @@
 package ut.systems.modelling.BPMN;
 
 
-public class Gateway extends Node{
+public class Gateway extends Node {
 
     public enum Type{
         XORSPLIT, XORJOIN, ANDSPLIT, ANDJOIN

@@ -6,7 +6,7 @@ import java.util.List;
 public class Petrinet {
 
     private List<Place> places = new ArrayList<>();
-    private List<Transition> transitions  = new ArrayList<>();;
+    private List<Transition> transitions  = new ArrayList<>();
 
     public Petrinet(){
     }
@@ -136,5 +136,8 @@ public class Petrinet {
 
     public List<Place> getPlaces() {
         return places;
+    }
+    public List<Transition> getTransitions() {
+        return transitions;
     }
 }

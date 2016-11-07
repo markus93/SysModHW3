@@ -19,8 +19,6 @@ import java.util.List;
 public class Parser {
     static BPMN getMyBPMNModel(BPMNDiagram promBPMN) {
 
-        List<Node> ourNodes = new ArrayList<Node>();
-        List<SequenceFlow> ourFlows = new ArrayList<SequenceFlow>();
 
         // Lets find the start event
         BPMNNode promNode = null;
@@ -32,18 +30,18 @@ public class Parser {
         }
 
         ut.systems.modelling.BPMN.Node ourStart = new ut.systems.modelling.BPMN.Event(ut.systems.modelling.BPMN.Event.Type.START);
-        ourNodes.add(ourStart);
 
         BPMN ourBPMN = new BPMN();
+        ourBPMN.addNode(ourStart);
 
-        BPMNconverter(promNode, ourStart, promBPMN, ourBPMN, Boolean.FALSE, null);
+        BPMNconverter(promNode, ourStart, promBPMN, ourBPMN, null);
 
         return ourBPMN;
     }
 
     static ut.systems.modelling.BPMN.Gateway BPMNconverter(BPMNNode promIn, ut.systems.modelling.BPMN.Node ourIn,
                                                            BPMNDiagram promBPMN, BPMN ourBPMN,
-                                                           Boolean joining, ut.systems.modelling.BPMN.Gateway joinGateway) {
+                                                           ut.systems.modelling.BPMN.Gateway joinGateway) {
 
         ut.systems.modelling.BPMN.Node ourOut;
         ut.systems.modelling.BPMN.SequenceFlow ourFlow;
@@ -77,24 +75,24 @@ public class Parser {
                     ourIn.addOutGoingFlow(ourFlow);
                     ourBPMN.addSequenceFlows(ourFlow);
 
-                    if (promIn instanceof Gateway && joining) {
+                    if (promIn instanceof Gateway && !isBPMNJoining((Gateway) promIn, promBPMN)) {
 
                         //follow the flows
                         if (joinGateway == null) {
-                            joinGateway = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, Boolean.TRUE, null);
+                            joinGateway = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, null);
                         } else {
-                            BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, Boolean.TRUE, joinGateway);
+                            BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateway);
                         }
 
                     } else {
 
                         //follow the flows
-                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joining, joinGateway);
+                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateway);
                     }
 
                 } else if (promOut instanceof Gateway) {
 
-                    if (joining == Boolean.FALSE) {
+                    if (isBPMNJoining((Gateway) promOut, promBPMN)) {
                         if(((Gateway) promOut).getGatewayType() == Gateway.GatewayType.PARALLEL){
                             ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.ANDSPLIT);
                         } else {
@@ -106,7 +104,7 @@ public class Parser {
                         ourIn.addOutGoingFlow(ourFlow);
                         ourBPMN.addSequenceFlows(ourFlow);
 
-                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, Boolean.TRUE, null);
+                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, null);
 
 
                     } else {
@@ -123,7 +121,7 @@ public class Parser {
                             ourIn.addOutGoingFlow(ourFlow);
                             ourBPMN.addSequenceFlows(ourFlow);
 
-                            BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, Boolean.TRUE, null);
+                            BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, null);
 
                             return (ut.systems.modelling.BPMN.Gateway) ourOut;
 
@@ -140,6 +138,19 @@ public class Parser {
         }
 
         return null;
+    }
+
+    static Boolean isBPMNJoining(Gateway gateway, BPMNDiagram bpmn) {
+
+        int outCount = 0;
+        for(Flow flow : bpmn.getFlows()) {
+            if(flow.getSource().equals(gateway)) {
+                outCount += 1;
+            }
+        }
+
+        return outCount == 1;
+
     }
 
     static Petrinet getPROMPetriNet(ut.systems.modelling.petrinet.Petrinet ourPN){
@@ -159,77 +170,69 @@ public class Parser {
 
         Place promStartPlace = promPN.addPlace(ourStartPlace.getLabel());
 
-        PNConverter(ourStartPlace, promStartPlace, promPN, null, Boolean.FALSE, null);
+        PNConverter(ourStartPlace, promStartPlace, promPN, ourPN, null);
 
         return promPN;
     }
 
-    static PetrinetNode PNConverter(ut.systems.modelling.petrinet.Place ourIn, Place promIn, Petrinet promPN, PetrinetNode joinNode,
-                                    Boolean joining, Boolean andBranch){
+    static PetrinetNode PNConverter(ut.systems.modelling.petrinet.Place ourIn, Place promIn, Petrinet promPN,
+                                    ut.systems.modelling.petrinet.Petrinet ourPN, PetrinetNode joinNode){
 
         Transition promOut;
         for(ut.systems.modelling.petrinet.Transition ourOut: ourIn.getTargetTransitions()) {
 
             if (ourOut.getLabel().equals("")) {
 
-                if (joining) {
+                if(pnNodeOutCount(ourOut) > 1) {
+                    // AND SPLIT (REGULAR)
 
-                    if (andBranch) {
-                        // AND JOIN
+                    promOut = promPN.addTransition("");
+                    promPN.addArc(promIn, promOut);
 
-                        if (joinNode == null) {
+                    return PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
 
-                            promOut = promPN.addTransition("");
-                            promPN.addArc(promIn, promOut);
-                            PNConverter(ourOut, promOut, promPN, null, Boolean.FALSE, null);
+                } else if(pnNodeOutCount(ourIn) > 1) {
+                    // XOR SPLIT
 
-                            return promOut;
-
-                        } else {
-
-                            promPN.addArc(promIn, (Transition) joinNode);
-                            return null;
-
-                        }
-
-                    } else {
-                        // XOR JOIN (REGULAR)
-
+                    if (joinNode == null) {
                         promOut = promPN.addTransition("");
                         promPN.addArc(promIn, promOut);
 
-                        return PNConverter(ourOut, promOut, promPN, joinNode, joining, andBranch);
+                        joinNode = PNConverter(ourOut, promOut, promPN, ourPN, null);
+
+                    } else {
+
+                        promOut = promPN.addTransition("");
+                        promPN.addArc(promIn, promOut);
+                        PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
+
+                    }
+
+                } else if(pnNodeInCount(ourOut, ourPN) > 1) {
+                    // AND JOIN
+
+                    if (joinNode == null) {
+
+                        promOut = promPN.addTransition("");
+                        promPN.addArc(promIn, promOut);
+                        PNConverter(ourOut, promOut, promPN, ourPN, null);
+
+                        return promOut;
+
+                    } else {
+
+                        promPN.addArc(promIn, (Transition) joinNode);
+                        return null;
 
                     }
 
                 } else {
+                    // XOR JOIN (REGULAR)
 
-                    if (ourIn.getTargetTransitions().size() == 1) {
-                        // AND SPLIT (REGULAR)
+                    promOut = promPN.addTransition("");
+                    promPN.addArc(promIn, promOut);
 
-                        promOut = promPN.addTransition("");
-                        promPN.addArc(promIn, promOut);
-
-                        return PNConverter(ourOut, promOut, promPN, joinNode, joining, Boolean.TRUE);
-
-                    } else {
-                        // XOR SPLIT
-
-                        if (joinNode == null) {
-                            promOut = promPN.addTransition("");
-                            promPN.addArc(promIn, promOut);
-
-                            joinNode = PNConverter(ourOut, promOut, promPN, null, Boolean.TRUE, Boolean.FALSE);
-
-                        } else {
-
-                            promOut = promPN.addTransition("");
-                            promPN.addArc(promIn, promOut);
-                            PNConverter(ourOut, promOut, promPN, joinNode, Boolean.TRUE, Boolean.FALSE);
-
-                        }
-                    }
-
+                    return PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
                 }
 
             } else {
@@ -239,7 +242,7 @@ public class Parser {
                 promOut = promPN.addTransition(ourOut.getLabel());
                 promPN.addArc(promIn, promOut);
 
-                return PNConverter(ourOut, promOut, promPN, joinNode, joining, andBranch);
+                return PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
             }
 
         }
@@ -247,64 +250,54 @@ public class Parser {
         return null;
     }
 
-    static PetrinetNode PNConverter(ut.systems.modelling.petrinet.Transition ourIn, Transition promIn, Petrinet promPN, PetrinetNode joinNode,
-                                  Boolean joining, Boolean andBranch) {
+    static PetrinetNode PNConverter(ut.systems.modelling.petrinet.Transition ourIn, Transition promIn, Petrinet promPN,
+                                    ut.systems.modelling.petrinet.Petrinet ourPN, PetrinetNode joinNode) {
 
         Place promOut;
         for (ut.systems.modelling.petrinet.Place ourOut : ourIn.getTargetPlaces()) {
 
             if (ourIn.getLabel().equals("")) {
 
-                if (joining) {
-                    if (andBranch) {
+                if(pnNodeOutCount(ourIn) > 1) {
+                    // AND SPLIT
 
-                        // AND JOIN (REGULAR)
+                    if (joinNode == null) {
                         promOut = promPN.addPlace(ourOut.getLabel());
                         promPN.addArc(promIn, promOut);
-                        return PNConverter(ourOut, promOut, promPN, null, Boolean.FALSE, null);
+                        joinNode = PNConverter(ourOut, promOut, promPN, ourPN, null);
+                    } else {
+                        promOut = promPN.addPlace(ourOut.getLabel());
+                        promPN.addArc(promIn, promOut);
+                        PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
+                    }
+
+                } else if(pnNodeInCount(ourIn, ourPN) > 1) {
+
+                    // AND JOIN (REGULAR)
+                    promOut = promPN.addPlace(ourOut.getLabel());
+                    promPN.addArc(promIn, promOut);
+                    return PNConverter(ourOut, promOut, promPN, ourPN, null);
+
+                } else if (pnNodeInCount(ourOut, ourPN) > 1) {
+                    // XOR JOIN
+
+                    if (joinNode == null) {
+                        promOut = promPN.addPlace(ourOut.getLabel());
+                        promPN.addArc(promIn, promOut);
+                        PNConverter(ourOut, promOut, promPN, ourPN, null);
+                        return promOut;
 
                     } else {
-
-                        // XOR JOIN
-
-                        if (joinNode == null) {
-                            promOut = promPN.addPlace(ourOut.getLabel());
-                            promPN.addArc(promIn, promOut);
-                            PNConverter(ourOut, promOut, promPN, null, Boolean.FALSE, null);
-                            return promOut;
-
-                        } else {
-                            promPN.addArc(promIn, (Place) joinNode);
-                            return null;
-                        }
-
+                        promPN.addArc(promIn, (Place) joinNode);
+                        return null;
                     }
 
                 } else {
+                    // XOR SPLIT
 
-                    if (andBranch) {
-
-                        //AND SPLIT
-
-                        if (joinNode == null) {
-                            promOut = promPN.addPlace(ourOut.getLabel());
-                            promPN.addArc(promIn, promOut);
-                            joinNode = PNConverter(ourOut, promOut, promPN, null, Boolean.TRUE, Boolean.TRUE);
-                        } else {
-                            promOut = promPN.addPlace(ourOut.getLabel());
-                            promPN.addArc(promIn, promOut);
-                            PNConverter(ourOut, promOut, promPN, joinNode, Boolean.TRUE, Boolean.TRUE);
-                        }
-
-                    } else {
-
-                        //XOR SPLIT (REGULAR)
-                        promOut = promPN.addPlace(ourOut.getLabel());
-                        promPN.addArc(promIn, promOut);
-                        return PNConverter(ourOut, promOut, promPN, joinNode, Boolean.TRUE, Boolean.FALSE);
-
-                    }
-
+                    promOut = promPN.addPlace(ourOut.getLabel());
+                    promPN.addArc(promIn, promOut);
+                    return PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
                 }
 
             } else {
@@ -312,11 +305,47 @@ public class Parser {
                 // Regular case, no splits or joins
                 promOut = promPN.addPlace(ourOut.getLabel());
                 promPN.addArc(promIn, promOut);
-                return PNConverter(ourOut, promOut, promPN, joinNode, joining, andBranch);
+                return PNConverter(ourOut, promOut, promPN, ourPN, joinNode);
 
             }
 
         }
         return null;
     }
+
+    static int pnNodeOutCount(ut.systems.modelling.petrinet.Transition node) {
+        return node.getTargetPlaces().size();
+    }
+
+    static int pnNodeOutCount(ut.systems.modelling.petrinet.Place node) {
+        return node.getTargetTransitions().size();
+    }
+
+    static int pnNodeInCount(ut.systems.modelling.petrinet.Transition node, ut.systems.modelling.petrinet.Petrinet ourPN) {
+        int count = 0;
+
+        for(ut.systems.modelling.petrinet.Place place : ourPN.getPlaces()) {
+            for(ut.systems.modelling.petrinet.Transition trans : place.getTargetTransitions()) {
+                if(trans.equals(node)) {
+                    count += 1;
+                }
+            }
+        }
+        return count;
+    }
+
+    static int pnNodeInCount(ut.systems.modelling.petrinet.Place node, ut.systems.modelling.petrinet.Petrinet ourPN) {
+        int count = 0;
+
+        for(ut.systems.modelling.petrinet.Transition trans : ourPN.getTransitions()) {
+            for(ut.systems.modelling.petrinet.Place place : trans.getTargetPlaces()) {
+                if(place.equals(node)) {
+                    count += 1;
+                }
+            }
+        }
+
+        return count;
+    }
+
 }
