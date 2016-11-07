@@ -170,7 +170,7 @@ public class Parser {
         Transition promOut;
         for(ut.systems.modelling.petrinet.Transition ourOut: ourIn.getTargetTransitions()) {
 
-            if (ourOut.getLabel() == "") {
+            if (ourOut.getLabel().equals("")) {
 
                 if (joining) {
 
@@ -253,7 +253,7 @@ public class Parser {
         Place promOut;
         for (ut.systems.modelling.petrinet.Place ourOut : ourIn.getTargetPlaces()) {
 
-            if (ourIn.getLabel() == "") {
+            if (ourIn.getLabel().equals("")) {
 
                 if (joining) {
                     if (andBranch) {
