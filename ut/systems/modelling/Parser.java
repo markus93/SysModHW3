@@ -34,14 +34,16 @@ public class Parser {
         ut.systems.modelling.BPMN.Node ourStart = new ut.systems.modelling.BPMN.Event(ut.systems.modelling.BPMN.Event.Type.START);
         ourNodes.add(ourStart);
 
-        BPMNconverter(promNode, ourStart, promBPMN, ourNodes, ourFlows, Boolean.FALSE, null);
+        BPMN ourBPMN = new BPMN();
 
-        return new BPMN(ourNodes, ourFlows);
+        BPMNconverter(promNode, ourStart, promBPMN, ourBPMN, Boolean.FALSE, null);
+
+        return ourBPMN;
     }
 
     static ut.systems.modelling.BPMN.Gateway BPMNconverter(BPMNNode promIn, ut.systems.modelling.BPMN.Node ourIn,
-                                                        BPMNDiagram promBPMN, List<Node> ourNodes,
-                                                        List<SequenceFlow> ourFlows, Boolean joining, ut.systems.modelling.BPMN.Gateway joinGateway) {
+                                                           BPMNDiagram promBPMN, BPMN ourBPMN,
+                                                           Boolean joining, ut.systems.modelling.BPMN.Gateway joinGateway) {
 
         ut.systems.modelling.BPMN.Node ourOut;
         ut.systems.modelling.BPMN.SequenceFlow ourFlow;
@@ -53,10 +55,10 @@ public class Parser {
                 if (promOut instanceof Event) {
                     // End of the recursion
                     ourOut = new ut.systems.modelling.BPMN.Event(ut.systems.modelling.BPMN.Event.Type.END);
-                    ourNodes.add(ourOut);
+                    ourBPMN.addNode(ourOut);
                     ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
                     ourIn.addOutGoingFlow(ourFlow);
-                    ourFlows.add(ourFlow);
+                    ourBPMN.addSequenceFlows(ourFlow);
 
                     return null;
 
@@ -70,24 +72,24 @@ public class Parser {
                     }
 
 
-                    ourNodes.add(ourOut);
+                    ourBPMN.addNode(ourOut);
                     ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
                     ourIn.addOutGoingFlow(ourFlow);
-                    ourFlows.add(ourFlow);
+                    ourBPMN.addSequenceFlows(ourFlow);
 
                     if (promIn instanceof Gateway && joining) {
 
                         //follow the flows
                         if (joinGateway == null) {
-                            joinGateway = BPMNconverter(promOut, ourOut, promBPMN, ourNodes, ourFlows, Boolean.TRUE, null);
+                            joinGateway = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, Boolean.TRUE, null);
                         } else {
-                            BPMNconverter(promOut, ourOut, promBPMN, ourNodes, ourFlows, Boolean.TRUE, joinGateway);
+                            BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, Boolean.TRUE, joinGateway);
                         }
 
                     } else {
 
                         //follow the flows
-                        return BPMNconverter(promOut, ourOut, promBPMN, ourNodes, ourFlows, joining, joinGateway);
+                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joining, joinGateway);
                     }
 
                 } else if (promOut instanceof Gateway) {
@@ -99,12 +101,12 @@ public class Parser {
                             ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.XORSPLIT);
                         }
 
-                        ourNodes.add(ourOut);
+                        ourBPMN.addNode(ourOut);
                         ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
                         ourIn.addOutGoingFlow(ourFlow);
-                        ourFlows.add(ourFlow);
+                        ourBPMN.addSequenceFlows(ourFlow);
 
-                        return BPMNconverter(promOut, ourOut, promBPMN, ourNodes, ourFlows, Boolean.TRUE, null);
+                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, Boolean.TRUE, null);
 
 
                     } else {
@@ -116,19 +118,19 @@ public class Parser {
                                 ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.XORJOIN);
                             }
 
-                            ourNodes.add(ourOut);
+                            ourBPMN.addNode(ourOut);
                             ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
                             ourIn.addOutGoingFlow(ourFlow);
-                            ourFlows.add(ourFlow);
+                            ourBPMN.addSequenceFlows(ourFlow);
 
-                            BPMNconverter(promOut, ourOut, promBPMN, ourNodes, ourFlows, Boolean.TRUE, null);
+                            BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, Boolean.TRUE, null);
 
                             return (ut.systems.modelling.BPMN.Gateway) ourOut;
 
                         } else {
                             ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, joinGateway);
                             ourIn.addOutGoingFlow(ourFlow);
-                            ourFlows.add(ourFlow);
+                            ourBPMN.addSequenceFlows(ourFlow);
 
                             return null;
                         }
