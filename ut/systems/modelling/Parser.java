@@ -24,7 +24,7 @@ public class Parser {
 
         // Lets find the start event
         BPMNNode promNode = null;
-        for (MessageFlow promFlow : promBPMN.getMessageFlows()) {
+        for (Flow promFlow : promBPMN.getFlows()) {
             promNode = promFlow.getSource();
             if (promNode instanceof Event) {
                 break;
@@ -47,7 +47,7 @@ public class Parser {
 
         ut.systems.modelling.BPMN.Node ourOut;
         ut.systems.modelling.BPMN.SequenceFlow ourFlow;
-        for (MessageFlow promFlow : promBPMN.getMessageFlows()) {
+        for (Flow promFlow : promBPMN.getFlows()) {
             if (promIn.equals(promFlow.getSource())) {
                 BPMNNode promOut = promFlow.getTarget();
 
@@ -149,8 +149,9 @@ public class Parser {
 
         //Lets find "P0"
         ut.systems.modelling.petrinet.Place ourStartPlace = null;
+        System.out.println("PLACCES: " + ourPN.getPlaces().toString());
         for (ut.systems.modelling.petrinet.Place ourPlace : ourPN.getPlaces()) {
-            if(ourPlace.getLabel() == "P0") {
+            if(ourPlace.getLabel().equals("P0")) {
                 ourStartPlace = ourPlace;
                 break;
             }
