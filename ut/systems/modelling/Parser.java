@@ -38,6 +38,7 @@ public class Parser {
 
         BPMNconverter(promNode, ourStart, promBPMN, ourBPMN, joinGateways);
 
+
         return ourBPMN;
     }
 
@@ -45,12 +46,15 @@ public class Parser {
                                                            BPMNDiagram promBPMN, BPMN ourBPMN,
                                                            List<ut.systems.modelling.BPMN.Gateway> joinGateways) {
 
+        System.out.println("Rekursiivne väljakutse");
+
         ut.systems.modelling.BPMN.Node ourOut;
         ut.systems.modelling.BPMN.SequenceFlow ourFlow;
         for (Flow promFlow : promBPMN.getFlows()) {
             if (promIn.equals(promFlow.getSource())) {
-                BPMNNode promOut = promFlow.getTarget();
 
+                BPMNNode promOut = promFlow.getTarget();
+                System.out.println("Loopis leitsime promOuti");
 
                 if (promOut instanceof Event) {
                     // End of the recursion
@@ -60,10 +64,14 @@ public class Parser {
                     ourIn.addOutGoingFlow(ourFlow);
                     ourBPMN.addSequenceFlows(ourFlow);
 
+                    System.out.println("Tegemist oli evendiga");
+
                     // Kõige lõpus tagastame kõik join gatewayd
                     return joinGateways;
 
                 } else if (promOut instanceof Activity) {
+
+                    System.out.println("Tegemist oli activitiga");
 
                     if (promOut instanceof SubProcess) {
                         // Compound task
@@ -72,7 +80,6 @@ public class Parser {
                         ourOut = new ut.systems.modelling.BPMN.Simple(promOut.getLabel());
                     }
 
-
                     ourBPMN.addNode(ourOut);
                     ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
                     ourIn.addOutGoingFlow(ourFlow);
@@ -80,12 +87,16 @@ public class Parser {
 
                     if (promIn instanceof Gateway && !isBPMNGatewayJoining((Gateway) promIn, promBPMN)) {
 
+                        System.out.println("Kohe pärast split gatewayd");
+
                         // Oleme teisel pool split gatewayd,
                         if (joinGateways.size() == 0) {
                             // Alguses on tühi ja siis lähme kaugemale joine otsima
+                            System.out.println("Liigume edasi");
                             joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
                         } else {
                             // kõik joinid on olemas juba
+                            System.out.println("Kõrvalharu");
                             BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
                             // funktsiooni lõpus eemaldame esimese elemendi ja siis tagastame
                         }
@@ -93,14 +104,50 @@ public class Parser {
                     } else {
 
                         //follow the flows
+                        System.out.println("Igav");
                         return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
                     }
 
                 } else if (promOut instanceof Gateway) {
 
-
                     if (isBPMNGatewayJoining((Gateway) promOut, promBPMN)) {
                         // join gateway ees oleme
+
+                        System.out.println("Join gateway ees oleme");
+
+                        if (joinGateways.size() == 0) {
+
+                            if (((Gateway) promOut).getGatewayType() == Gateway.GatewayType.PARALLEL) {
+                                ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.ANDJOIN);
+                            } else {
+                                ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.XORJOIN);
+                            }
+
+                            ourBPMN.addNode(ourOut);
+                            ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
+                            ourIn.addOutGoingFlow(ourFlow);
+                            ourBPMN.addSequenceFlows(ourFlow);
+
+                            joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
+                            joinGateways.add(0, (ut.systems.modelling.BPMN.Gateway) ourOut);
+
+                            return joinGateways;
+                        } else {
+                            // Kõrvalharu
+
+                            ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, joinGateways.get(0));
+                            ourIn.addOutGoingFlow(ourFlow);
+                            ourBPMN.addSequenceFlows(ourFlow);
+
+                            System.out.println("Kõrvalharu lõpp");
+                            return joinGateways;
+                        }
+
+
+                    } else {
+
+                        System.out.println("Spliti ees oleme");
+                        // Oleme split gateway ees
 
                         if(((Gateway) promOut).getGatewayType() == Gateway.GatewayType.PARALLEL){
                             ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.ANDSPLIT);
@@ -113,34 +160,16 @@ public class Parser {
                         ourIn.addOutGoingFlow(ourFlow);
                         ourBPMN.addSequenceFlows(ourFlow);
 
-                        joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
-                        joinGateways.add(0, (ut.systems.modelling.BPMN.Gateway) ourOut);
-
-                        return joinGateways;
-
-
-                    } else {
-
-
-                        // Oleme split gateway ees
-
-                        if(((Gateway) promOut).getGatewayType() == Gateway.GatewayType.PARALLEL){
-                            ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.ANDJOIN);
-                        } else {
-                            ourOut = new ut.systems.modelling.BPMN.Gateway(ut.systems.modelling.BPMN.Gateway.Type.XORJOIN);
-                        }
-
-                        ourBPMN.addNode(ourOut);
-                        ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
-                        ourIn.addOutGoingFlow(ourFlow);
-                        ourBPMN.addSequenceFlows(ourFlow);
-
                         return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
 
                     }
+                } else {
+                    System.out.println("SEDA EI TOHIKS JUHTUDA!!");
                 }
             }
         }
+
+        System.out.println("Täitsa lõpp");
         joinGateways.remove(0);
         return joinGateways;
     }
