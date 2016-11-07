@@ -83,7 +83,7 @@ public class Parser {
                         // Oleme teisel pool split gatewayd,
                         if (joinGateways.size() == 0) {
                             // Alguses on tühi ja siis lähme kaugemale joine otsima
-                            joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, null);
+                            joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
                         } else {
                             // kõik joinid on olemas juba
                             BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
@@ -230,7 +230,6 @@ public class Parser {
                     } else {
 
                         promPN.addArc(promIn, (Transition) joinNodes.get(0));
-                        return null;
 
                     }
 
