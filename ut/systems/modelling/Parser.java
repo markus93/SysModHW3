@@ -230,6 +230,7 @@ public class Parser {
                     } else {
 
                         promPN.addArc(promIn, (Transition) joinNodes.get(0));
+                        return joinNodes;
 
                     }
 
