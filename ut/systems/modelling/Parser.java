@@ -44,6 +44,7 @@ public class Parser {
                                                         List<SequenceFlow> ourFlows, Boolean joining, ut.systems.modelling.BPMN.Gateway joinGateway) {
 
         ut.systems.modelling.BPMN.Node ourOut;
+        ut.systems.modelling.BPMN.SequenceFlow ourFlow;
         for (MessageFlow promFlow : promBPMN.getMessageFlows()) {
             if (promIn.equals(promFlow.getSource())) {
                 BPMNNode promOut = promFlow.getTarget();
@@ -53,13 +54,16 @@ public class Parser {
                     // End of the recursion
                     ourOut = new ut.systems.modelling.BPMN.Event(ut.systems.modelling.BPMN.Event.Type.END);
                     ourNodes.add(ourOut);
-                    ourFlows.add(new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut));
+                    ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
+                    ourIn.addOutGoingFlow(ourFlow);
+                    ourFlows.add(ourFlow);
 
                     return null;
 
                 } else if (promOut instanceof Activity) {
 
                     if (promOut instanceof SubProcess) {
+                        // Compound task
                         ourOut = new ut.systems.modelling.BPMN.Compound(getMyBPMNModel((BPMNDiagram) promOut.getGraph()), promOut.getLabel());
                     } else {
                         ourOut = new ut.systems.modelling.BPMN.Simple(promOut.getLabel());
@@ -67,7 +71,9 @@ public class Parser {
 
 
                     ourNodes.add(ourOut);
-                    ourFlows.add(new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut));
+                    ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
+                    ourIn.addOutGoingFlow(ourFlow);
+                    ourFlows.add(ourFlow);
 
                     if (promIn instanceof Gateway && joining) {
 
@@ -94,7 +100,9 @@ public class Parser {
                         }
 
                         ourNodes.add(ourOut);
-                        ourFlows.add(new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut));
+                        ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
+                        ourIn.addOutGoingFlow(ourFlow);
+                        ourFlows.add(ourFlow);
 
                         return BPMNconverter(promOut, ourOut, promBPMN, ourNodes, ourFlows, Boolean.TRUE, null);
 
@@ -109,15 +117,18 @@ public class Parser {
                             }
 
                             ourNodes.add(ourOut);
-
-                            ourFlows.add(new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut));
+                            ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
+                            ourIn.addOutGoingFlow(ourFlow);
+                            ourFlows.add(ourFlow);
 
                             BPMNconverter(promOut, ourOut, promBPMN, ourNodes, ourFlows, Boolean.TRUE, null);
 
                             return (ut.systems.modelling.BPMN.Gateway) ourOut;
 
                         } else {
-                            ourFlows.add(new ut.systems.modelling.BPMN.SequenceFlow(ourIn, joinGateway));
+                            ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, joinGateway);
+                            ourIn.addOutGoingFlow(ourFlow);
+                            ourFlows.add(ourFlow);
 
                             return null;
                         }
