@@ -8,7 +8,7 @@ public class Place {
 
     private String label;
     private Boolean token = false;
-    private String type; //TODO is type used for start and end?
+    private String type;
     private List<Transition> targetTransition = new ArrayList<Transition>();
 
     public Place(String label){

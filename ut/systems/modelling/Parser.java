@@ -1,6 +1,5 @@
 package ut.systems.modelling;
 
-import org.processmining.models.graphbased.directed.bpmn.BPMNDiagramImpl;
 import org.processmining.models.graphbased.directed.bpmn.BPMNNode;
 import org.processmining.models.graphbased.directed.bpmn.elements.*;
 import org.processmining.models.graphbased.directed.bpmn.elements.Event;
@@ -71,7 +70,7 @@ public class Parser {
                     ourBPMN.addNode(ourOut);
                     ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
                     ourIn.addOutGoingFlow(ourFlow);
-                    ourBPMN.addSequenceFlows(ourFlow);
+                    ourBPMN.addSequenceFlow(ourFlow);
 
                     // Kõige lõpus tagastame kõik join gatewayd
                     return joinGateways;
@@ -88,7 +87,7 @@ public class Parser {
                     ourBPMN.addNode(ourOut);
                     ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
                     ourIn.addOutGoingFlow(ourFlow);
-                    ourBPMN.addSequenceFlows(ourFlow);
+                    ourBPMN.addSequenceFlow(ourFlow);
 
                     if (promIn instanceof Gateway && !isBPMNGatewayJoining((Gateway) promIn, promBPMN, subProcess)) {
 
@@ -125,7 +124,7 @@ public class Parser {
                             ourBPMN.addNode(ourOut);
                             ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
                             ourIn.addOutGoingFlow(ourFlow);
-                            ourBPMN.addSequenceFlows(ourFlow);
+                            ourBPMN.addSequenceFlow(ourFlow);
 
                             joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways, subProcess);
                             joinGateways.add(0, (ut.systems.modelling.BPMN.Gateway) ourOut);
@@ -136,7 +135,7 @@ public class Parser {
 
                             ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, joinGateways.get(0));
                             ourIn.addOutGoingFlow(ourFlow);
-                            ourBPMN.addSequenceFlows(ourFlow);
+                            ourBPMN.addSequenceFlow(ourFlow);
 
                             return joinGateways;
                         }
@@ -155,7 +154,7 @@ public class Parser {
                         ourBPMN.addNode(ourOut);
                         ourFlow = new ut.systems.modelling.BPMN.SequenceFlow(ourIn, ourOut);
                         ourIn.addOutGoingFlow(ourFlow);
-                        ourBPMN.addSequenceFlows(ourFlow);
+                        ourBPMN.addSequenceFlow(ourFlow);
 
                         return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways, subProcess);
 

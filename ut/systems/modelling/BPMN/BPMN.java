@@ -36,7 +36,7 @@ public class BPMN {
         return null;
     }
 
-    public void addSequenceFlows(SequenceFlow flow) {
+    public void addSequenceFlow(SequenceFlow flow) {
         sequenceFlows.add(flow);
     }
     public void addNode(Node node) {
