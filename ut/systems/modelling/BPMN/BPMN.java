@@ -5,11 +5,16 @@ import java.util.List;
 
 public class BPMN {
 
-    private List<Node> nodes = new ArrayList<Node>();;
+    private List<Node> nodes = new ArrayList<Node>();
     private List<SequenceFlow> sequenceFlows = new ArrayList<SequenceFlow>();
 
     public BPMN(){
 
+    }
+
+    public BPMN(List<Node> nodes, List<SequenceFlow> sequenceFlows){
+        this.nodes = nodes;
+        this.sequenceFlows = sequenceFlows;
     }
 
     public SequenceFlow findFirstFlow(){
