@@ -1,5 +1,6 @@
 package ut.systems.modelling;
 
+import org.processmining.models.graphbased.directed.bpmn.BPMNDiagramImpl;
 import org.processmining.models.graphbased.directed.bpmn.BPMNNode;
 import org.processmining.models.graphbased.directed.bpmn.elements.*;
 import org.processmining.models.graphbased.directed.bpmn.elements.Event;
@@ -17,17 +18,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Parser {
-    static BPMN getMyBPMNModel(BPMNDiagram promBPMN) {
+
+    static BPMN getMyBPMNModel(BPMNDiagram promBPMN){
+
+        //Null sub process in order to get only main BPMN flows.
+        return getMyBPMNModel( promBPMN, null);
+    }
+
+    static BPMN getMyBPMNModel(BPMNDiagram promBPMN, SubProcess subProcess) {
 
 
         // Lets find the start event
         BPMNNode promNode = null;
-        for (Flow promFlow : promBPMN.getFlows()) {
+        for (Flow promFlow : promBPMN.getFlows(subProcess)) {
             promNode = promFlow.getSource();
             if (promNode instanceof Event) {
                 break;
             }
         }
+
+        System.out.println("Flows lenght: " + promBPMN.getFlows(subProcess).size());
 
         ut.systems.modelling.BPMN.Node ourStart = new ut.systems.modelling.BPMN.Event(ut.systems.modelling.BPMN.Event.Type.START);
 
@@ -36,20 +46,21 @@ public class Parser {
 
         List<ut.systems.modelling.BPMN.Gateway> joinGateways = new ArrayList<>();
 
-        BPMNconverter(promNode, ourStart, promBPMN, ourBPMN, joinGateways);
+        BPMNconverter(promNode, ourStart, promBPMN, ourBPMN, joinGateways, subProcess);
 
 
         return ourBPMN;
     }
 
     static List<ut.systems.modelling.BPMN.Gateway> BPMNconverter(BPMNNode promIn, ut.systems.modelling.BPMN.Node ourIn,
-                                                           BPMNDiagram promBPMN, BPMN ourBPMN,
-                                                           List<ut.systems.modelling.BPMN.Gateway> joinGateways) {
+                                                                 BPMNDiagram promBPMN, BPMN ourBPMN,
+                                                                 List<ut.systems.modelling.BPMN.Gateway> joinGateways,
+                                                                 SubProcess subProcess) {
 
 
         ut.systems.modelling.BPMN.Node ourOut;
         ut.systems.modelling.BPMN.SequenceFlow ourFlow;
-        for (Flow promFlow : promBPMN.getFlows()) {
+        for (Flow promFlow : promBPMN.getFlows(subProcess)) {
             if (promIn.equals(promFlow.getSource())) {
 
                 BPMNNode promOut = promFlow.getTarget();
@@ -69,7 +80,7 @@ public class Parser {
 
                     if (promOut instanceof SubProcess) {
                         // Compound task
-                        ourOut = new ut.systems.modelling.BPMN.Compound(getMyBPMNModel((BPMNDiagram) promOut.getGraph()), promOut.getLabel());
+                        ourOut = new ut.systems.modelling.BPMN.Compound(getMyBPMNModel(promBPMN, (SubProcess) promOut), promOut.getLabel());
                     } else {
                         ourOut = new ut.systems.modelling.BPMN.Simple(promOut.getLabel());
                     }
@@ -79,27 +90,27 @@ public class Parser {
                     ourIn.addOutGoingFlow(ourFlow);
                     ourBPMN.addSequenceFlows(ourFlow);
 
-                    if (promIn instanceof Gateway && !isBPMNGatewayJoining((Gateway) promIn, promBPMN)) {
+                    if (promIn instanceof Gateway && !isBPMNGatewayJoining((Gateway) promIn, promBPMN, subProcess)) {
 
                         // Oleme teisel pool split gatewayd,
                         if (joinGateways.size() == 0) {
                             // Alguses on tühi ja siis lähme kaugemale joine otsima
-                            joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
+                            joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways, subProcess);
                         } else {
                             // kõik joinid on olemas juba
-                            BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
+                            BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways, subProcess);
                             // funktsiooni lõpus eemaldame esimese elemendi ja siis tagastame
                         }
 
                     } else {
 
                         //follow the flows
-                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
+                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways, subProcess);
                     }
 
                 } else if (promOut instanceof Gateway) {
 
-                    if (isBPMNGatewayJoining((Gateway) promOut, promBPMN)) {
+                    if (isBPMNGatewayJoining((Gateway) promOut, promBPMN, subProcess)) {
                         // join gateway ees oleme
 
 
@@ -116,7 +127,7 @@ public class Parser {
                             ourIn.addOutGoingFlow(ourFlow);
                             ourBPMN.addSequenceFlows(ourFlow);
 
-                            joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
+                            joinGateways = BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways, subProcess);
                             joinGateways.add(0, (ut.systems.modelling.BPMN.Gateway) ourOut);
 
                             return joinGateways;
@@ -146,7 +157,7 @@ public class Parser {
                         ourIn.addOutGoingFlow(ourFlow);
                         ourBPMN.addSequenceFlows(ourFlow);
 
-                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways);
+                        return BPMNconverter(promOut, ourOut, promBPMN, ourBPMN, joinGateways, subProcess);
 
                     }
                 } else {
@@ -158,10 +169,10 @@ public class Parser {
         return joinGateways;
     }
 
-    static Boolean isBPMNGatewayJoining(Gateway gateway, BPMNDiagram bpmn) {
+    static Boolean isBPMNGatewayJoining(Gateway gateway, BPMNDiagram bpmn, SubProcess subProcess) {
 
         int outCount = 0;
-        for(Flow flow : bpmn.getFlows()) {
+        for(Flow flow : bpmn.getFlows(subProcess)) {
             if(flow.getSource().equals(gateway)) {
                 outCount += 1;
             }
@@ -196,7 +207,7 @@ public class Parser {
     }
 
     static List<PetrinetNode> PNConverter(ut.systems.modelling.petrinet.Place ourIn, Place promIn, Petrinet promPN,
-                                    ut.systems.modelling.petrinet.Petrinet ourPN, List<PetrinetNode> joinNodes){
+                                          ut.systems.modelling.petrinet.Petrinet ourPN, List<PetrinetNode> joinNodes){
 
         Transition promOut;
         for(ut.systems.modelling.petrinet.Transition ourOut: ourIn.getTargetTransitions()) {
@@ -282,7 +293,7 @@ public class Parser {
     }
 
     static List<PetrinetNode> PNConverter(ut.systems.modelling.petrinet.Transition ourIn, Transition promIn, Petrinet promPN,
-                                    ut.systems.modelling.petrinet.Petrinet ourPN, List<PetrinetNode> joinNodes) {
+                                          ut.systems.modelling.petrinet.Petrinet ourPN, List<PetrinetNode> joinNodes) {
 
         Place promOut;
         for (ut.systems.modelling.petrinet.Place ourOut : ourIn.getTargetPlaces()) {
