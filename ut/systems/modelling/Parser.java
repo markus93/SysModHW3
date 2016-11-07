@@ -36,8 +36,6 @@ public class Parser {
             }
         }
 
-        System.out.println("Flows lenght: " + promBPMN.getFlows(subProcess).size());
-
         ut.systems.modelling.BPMN.Node ourStart = new ut.systems.modelling.BPMN.Event(ut.systems.modelling.BPMN.Event.Type.START);
 
         BPMN ourBPMN = new BPMN();
@@ -188,7 +186,7 @@ public class Parser {
 
         //Lets find "P0"
         ut.systems.modelling.petrinet.Place ourStartPlace = null;
-        System.out.println("PLACCES: " + ourPN.getPlaces().toString());
+
         for (ut.systems.modelling.petrinet.Place ourPlace : ourPN.getPlaces()) {
             if(ourPlace.getLabel().equals("P0")) {
                 ourStartPlace = ourPlace;
@@ -217,7 +215,7 @@ public class Parser {
                     // AND SPLIT (REGULAR)
 
                     promOut = promPN.addTransition("");
-                    promOut.setInvisible(Boolean.TRUE);
+                    promOut.setInvisible(true);
                     promPN.addArc(promIn, promOut);
 
                     return PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
@@ -227,7 +225,7 @@ public class Parser {
 
                     if (joinNodes.size() == 0) {
                         promOut = promPN.addTransition("");
-                        promOut.setInvisible(Boolean.TRUE);
+                        promOut.setInvisible(true);
                         promPN.addArc(promIn, promOut);
 
                         joinNodes = PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
@@ -235,7 +233,7 @@ public class Parser {
                     } else {
 
                         promOut = promPN.addTransition("");
-                        promOut.setInvisible(Boolean.TRUE);
+                        promOut.setInvisible(true);
                         promPN.addArc(promIn, promOut);
                         PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
 
@@ -247,7 +245,7 @@ public class Parser {
                     if (joinNodes.size() == 0) {
 
                         promOut = promPN.addTransition("");
-                        promOut.setInvisible(Boolean.TRUE);
+                        promOut.setInvisible(true);
                         promPN.addArc(promIn, promOut);
                         joinNodes = PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
                         joinNodes.add(0, promOut);
@@ -265,7 +263,7 @@ public class Parser {
                     // XOR JOIN (REGULAR)
 
                     promOut = promPN.addTransition("");
-                    promOut.setInvisible(Boolean.TRUE);
+                    promOut.setInvisible(true);
                     promPN.addArc(promIn, promOut);
 
                     return PNConverter(ourOut, promOut, promPN, ourPN, joinNodes);
